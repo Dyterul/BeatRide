@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        tools:context=".MainActivity">
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:tools="http://schemas.android.com/tools"
+                  android:layout_width="fill_parent"
+                  android:layout_height="fill_parent"
+                  android:orientation="vertical">
+
+        <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Use GPS"
+                  android:id="@+id/useGPS"/>
+
+        <TextView
+                android:id="@+id/txtCurrentSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="000.0 km/h"
+                android:textSize="50dp"
+                android:textAppearance="?android:attr/textAppearanceLarge"/>
+
+
+        <com.google.android.material.slider.RangeSlider
+                android:valueFrom="0"
+                android:valueTo="100"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rangeSlider"/>
+
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="50dp"
+                android:id="@+id/btnPlayPause" android:text="Play"/>
+
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                android:id="@+id/btnNext" android:text="Next"/>
+
+    </LinearLayout>
+</LinearLayout>
