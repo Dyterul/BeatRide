@@ -13,7 +13,8 @@
                   android:layout_height="fill_parent"
                   android:orientation="vertical">
 
-        <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Use GPS"
+        <CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:text="@string/use_gps"
                   android:id="@+id/useGPS"/>
 
         <TextView
@@ -21,7 +22,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="000.0 km/h"
-                android:textSize="50dp"
+                android:textSize="50sp"
                 android:textAppearance="?android:attr/textAppearanceLarge"/>
 
 
@@ -32,11 +33,15 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/rangeSlider"/>
 
-        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="50dp"
-                android:id="@+id/btnPlayPause" android:text="Play"/>
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="50sp"
+                android:id="@+id/btnPlayPause" android:text="@string/play"/>
 
-        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20dp"
-                android:id="@+id/btnNext" android:text="Next"/>
+        <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20sp"
+                android:id="@+id/btnNext" android:text="@string/next"/>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:text="@string/empty_playback"
+                  android:id="@+id/txtTrackName"/>
 
     </LinearLayout>
 </LinearLayout>

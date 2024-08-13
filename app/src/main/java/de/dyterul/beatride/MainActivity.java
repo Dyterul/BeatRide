@@ -1,11 +1,7 @@
 package de.dyterul.beatride;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationManager;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -13,54 +9,45 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.TextView;
-import androidx.core.app.ActivityCompat;
 import com.google.android.material.slider.RangeSlider;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Formatter;
 import java.util.List;
-import java.util.Locale;
 
 import static android.os.Build.VERSION.SDK_INT;
 
-public class MainActivity extends Activity implements IBaseGpsListener {
+public class MainActivity extends Activity {
 
     List<String> availableTracks = new ArrayList<>();
     int nowPlaying;
     int lastSpeed = 0;
+    private long lastSpeedUpdate = System.currentTimeMillis();
     private MediaPlayer mediaPlayerBass = new MediaPlayer();
     private MediaPlayer mediaPlayerOther = new MediaPlayer();
     private MediaPlayer mediaPlayerDrums = new MediaPlayer();
     private MediaPlayer mediaPlayerPiano = new MediaPlayer();
     private MediaPlayer mediaPlayerVocals = new MediaPlayer();
 
+    private float musicSpeedNow = 1;
+
+    private float volumeBassNow = 0;
+    private float volumeDrumsNow = 0;
+    private float volumePianoNow = 0;
+    private float volumeVocalsNow = 0;
+    private float volumeOtherNow = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-        this.updateSpeed(null);
+
+        new LocationServices(this);
 
         RangeSlider rangeSlider = findViewById(R.id.rangeSlider);
-        rangeSlider.addOnChangeListener((slider, value, fromUser) -> {
-            lastSpeed = (int) value;
-            MainActivity.this.updateVolume((int) value);
-        });
+        rangeSlider.addOnChangeListener((slider, value, fromUser) -> lastSpeed = (int) value);
 
         Button PlayPauseButton = findViewById(R.id.btnPlayPause);
         PlayPauseButton.setOnClickListener(v -> {
@@ -84,9 +71,7 @@ public class MainActivity extends Activity implements IBaseGpsListener {
         });
 
         Button NextButton = findViewById(R.id.btnNext);
-        NextButton.setOnClickListener(v -> {
-            OnTrackEnd();
-        });
+        NextButton.setOnClickListener(v -> OnTrackEnd());
 
         if (SDK_INT >= Build.VERSION_CODES.R) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
@@ -104,6 +89,26 @@ public class MainActivity extends Activity implements IBaseGpsListener {
         mediaPlayerPiano.pause();
         mediaPlayerVocals.pause();
         mediaPlayerOther.pause();
+
+
+        // new Task for updating the player settings every 10ms
+        new Thread(() -> {
+//            float speedLastUpdate = 0;
+            while (true) {
+                try {
+                    Thread.sleep(500);
+//                    float finalSpeedLastUpdate = speedLastUpdate;
+                    runOnUiThread(() -> {
+                        updateVolume(lastSpeed);
+//                        updateMusicSpeed(lastSpeed, finalSpeedLastUpdate);
+                    });
+
+//                    speedLastUpdate = lastSpeed;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     private String GetNextTrack() {
@@ -132,6 +137,10 @@ public class MainActivity extends Activity implements IBaseGpsListener {
     }
 
     private void PlayTrack(String trackName) {
+        TextView txtTrackName = findViewById(R.id.txtTrackName);
+        txtTrackName.setText(trackName);
+
+
         if (mediaPlayerBass != null) {
             mediaPlayerBass.release();
             mediaPlayerOther.release();
@@ -146,8 +155,6 @@ public class MainActivity extends Activity implements IBaseGpsListener {
         mediaPlayerDrums = LoadMedia(trackName, Instruments.DRUMS);
         mediaPlayerPiano = LoadMedia(trackName, Instruments.PIANO);
         mediaPlayerVocals = LoadMedia(trackName, Instruments.VOCALS);
-
-        mediaPlayerBass.setVolume(100, 100);
 
         updateVolume(lastSpeed);
 
@@ -207,54 +214,62 @@ public class MainActivity extends Activity implements IBaseGpsListener {
         System.exit(0);
     }
 
-    private void updateSpeed(CLocation location) {
-        // TODO Auto-generated method stub
-        float nCurrentSpeed = 0;
+    private void updateVolume(int currentSpeed) {
+        float volumeChangeSpeed = 0.5f;
 
-        if (location != null) {
-            location.setUseMetricunits(false);
-            nCurrentSpeed = location.getSpeed();
-            nCurrentSpeed = nCurrentSpeed * 3.6f;
-        }
+        float volumeBassTarget = getVolume(currentSpeed, 0, 30, 80);
+        float volumeDrumsTarget = getVolume(currentSpeed, 0, 35, 40);
+        float volumePianoTarget = getVolume(currentSpeed, 15, 45);
+        float volumeVocalTargets = getVolume(currentSpeed, 25, 45);
+        float volumeOtherTarget = getVolume(currentSpeed, 20, 50, 10);
 
-        Formatter fmt = new Formatter(new StringBuilder());
-        fmt.format(Locale.US, "%5.1f", nCurrentSpeed);
-        String strCurrentSpeed = fmt.toString();
-        strCurrentSpeed = strCurrentSpeed.replace(' ', '0');
+        volumeBassNow = getSmoothTransition(volumeBassNow, volumeBassTarget, volumeChangeSpeed);
+        volumeDrumsNow = getSmoothTransition(volumeDrumsNow, volumeDrumsTarget, volumeChangeSpeed);
+        volumePianoNow = getSmoothTransition(volumePianoNow, volumePianoTarget, volumeChangeSpeed);
+        volumeVocalsNow = getSmoothTransition(volumeVocalsNow, volumeVocalTargets, volumeChangeSpeed);
+        volumeOtherNow = getSmoothTransition(volumeOtherNow, volumeOtherTarget, volumeChangeSpeed);
 
-        String strUnits = "km/h";
+        System.out.println("BassTarget: " + volumeBassNow + " BassNow: " + volumeBassNow);
+        System.out.println("DrumsTarget: " + volumeDrumsTarget + " DrumsNow: " + volumeDrumsNow);
+        System.out.println("PianoTarget: " + volumePianoTarget + " PianoNow: " + volumePianoNow);
+        System.out.println("VocalsTarget: " + volumeVocalTargets + " VocalsNow: " + volumeVocalsNow);
+        System.out.println("OtherTarget: " + volumeOtherTarget + " OtherNow: " + volumeOtherNow);
 
-        TextView txtCurrentSpeed = this.findViewById(R.id.txtCurrentSpeed);
-        txtCurrentSpeed.setText(strCurrentSpeed + " " + strUnits);
-
-
-        // update the volume
-        Button PlayPauseButton = findViewById(R.id.btnPlayPause);
-        CheckBox checkBox = findViewById(R.id.useGPS);
-        if (PlayPauseButton.getText().equals("Pause") && checkBox.isChecked()) {
-            lastSpeed = (int) nCurrentSpeed;
-            this.updateVolume((int) nCurrentSpeed);
-        }
+        mediaPlayerBass.setVolume(volumeBassNow, volumeBassNow);
+        mediaPlayerDrums.setVolume(volumeDrumsNow, volumeDrumsNow);
+        mediaPlayerPiano.setVolume(volumePianoNow, volumePianoNow);
+        mediaPlayerVocals.setVolume(volumeVocalsNow, volumeVocalsNow);
+        mediaPlayerOther.setVolume(volumeOtherNow, volumeOtherNow);
     }
 
-    private void updateVolume(int currentSpeed) {
-        int maxVolume = 100;
+    private void updateMusicSpeed(float speedNow, float speedBefore) {
+        long now = System.currentTimeMillis();
+        long timeSinceLastUpdate = now - lastSpeedUpdate;
+        lastSpeedUpdate = now;
 
-        float volumeDrums = getVolume(currentSpeed, 15, 25);
-        float volumePiano = getVolume(currentSpeed, 30, 35);
-        float volumeVocals = getVolume(currentSpeed, 35, 50);
-        float volumeOther = getVolume(currentSpeed, 45, 55);
+        float speedDifference = speedNow - speedBefore;
 
-        // print the volume to the console
-        System.out.println("Drums: " + volumeDrums);
-        System.out.println("Piano: " + volumePiano);
-        System.out.println("Vocals: " + volumeVocals);
-        System.out.println("Other: " + volumeOther);
+        float musicSpeedMax = 1.3f;
+        float musicSpeedMin = 0.7f;
 
-        mediaPlayerDrums.setVolume(volumeDrums, volumeDrums);
-        mediaPlayerPiano.setVolume(volumePiano, volumePiano);
-        mediaPlayerVocals.setVolume(volumeVocals, volumeVocals);
-        mediaPlayerOther.setVolume(volumeOther, volumeOther);
+        float speedChange = speedDifference / timeSinceLastUpdate;
+
+        float musicSpeedTarget = 1 + speedChange * 2;
+
+        musicSpeedTarget = Math.min(musicSpeedTarget, musicSpeedMax);
+        musicSpeedTarget = Math.max(musicSpeedTarget, musicSpeedMin);
+
+        musicSpeedNow = getSmoothTransition(musicSpeedNow, musicSpeedTarget, 1f);
+
+        System.out.println("SpeedChange: " + speedChange + " SpeedDifference: " + speedDifference);
+        System.out.println("MusicSpeed: " + musicSpeedNow);
+
+
+        mediaPlayerBass.setPlaybackParams(mediaPlayerBass.getPlaybackParams().setSpeed(musicSpeedNow));
+        mediaPlayerDrums.setPlaybackParams(mediaPlayerDrums.getPlaybackParams().setSpeed(musicSpeedNow));
+//        mediaPlayerPiano.setPlaybackParams(mediaPlayerPiano.getPlaybackParams().setSpeed(musicSpeedNow));
+        mediaPlayerVocals.setPlaybackParams(mediaPlayerVocals.getPlaybackParams().setSpeed(musicSpeedNow));
+        mediaPlayerOther.setPlaybackParams(mediaPlayerOther.getPlaybackParams().setSpeed(musicSpeedNow));
     }
 
     private float getVolume(int currentSpeed, int startSpeed, int maxSpeed, int... minVolume) {
@@ -277,41 +292,9 @@ public class MainActivity extends Activity implements IBaseGpsListener {
         volume = Math.min(volume, 100);
 
         return (float) (1 - (Math.log(maxVolume - volume) / Math.log(maxVolume)));
-
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        // TODO Auto-generated method stub
-        if (location != null) {
-            CLocation myLocation = new CLocation(location, false);
-            this.updateSpeed(myLocation);
-        }
+    private float getSmoothTransition(float currentValue, float targetValue, float speed) {
+        return currentValue + (targetValue - currentValue) * speed;
     }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onGpsStatusChanged(int event) {
-        // TODO Auto-generated method stub
-
-    }
-
-
 }
