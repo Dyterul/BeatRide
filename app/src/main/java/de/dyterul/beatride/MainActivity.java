@@ -28,14 +28,12 @@ public class MainActivity extends Activity {
     private MediaPlayer mediaPlayerBass = new MediaPlayer();
     private MediaPlayer mediaPlayerOther = new MediaPlayer();
     private MediaPlayer mediaPlayerDrums = new MediaPlayer();
-    private MediaPlayer mediaPlayerPiano = new MediaPlayer();
     private MediaPlayer mediaPlayerVocals = new MediaPlayer();
 
     private float musicSpeedNow = 1;
 
     private float volumeBassNow = 0;
     private float volumeDrumsNow = 0;
-    private float volumePianoNow = 0;
     private float volumeVocalsNow = 0;
     private float volumeOtherNow = 0;
 
@@ -56,7 +54,6 @@ public class MainActivity extends Activity {
 
                 mediaPlayerBass.pause();
                 mediaPlayerDrums.pause();
-                mediaPlayerPiano.pause();
                 mediaPlayerVocals.pause();
                 mediaPlayerOther.pause();
             } else {
@@ -64,7 +61,6 @@ public class MainActivity extends Activity {
 
                 mediaPlayerBass.start();
                 mediaPlayerDrums.start();
-                mediaPlayerPiano.start();
                 mediaPlayerVocals.start();
                 mediaPlayerOther.start();
             }
@@ -86,7 +82,6 @@ public class MainActivity extends Activity {
         OnTrackEnd();
         mediaPlayerBass.pause();
         mediaPlayerDrums.pause();
-        mediaPlayerPiano.pause();
         mediaPlayerVocals.pause();
         mediaPlayerOther.pause();
 
@@ -145,7 +140,6 @@ public class MainActivity extends Activity {
             mediaPlayerBass.release();
             mediaPlayerOther.release();
             mediaPlayerDrums.release();
-            mediaPlayerPiano.release();
             mediaPlayerVocals.release();
         }
 
@@ -153,7 +147,6 @@ public class MainActivity extends Activity {
         mediaPlayerBass = LoadMedia(trackName, Instruments.BASS);
         mediaPlayerOther = LoadMedia(trackName, Instruments.OTHER);
         mediaPlayerDrums = LoadMedia(trackName, Instruments.DRUMS);
-        mediaPlayerPiano = LoadMedia(trackName, Instruments.PIANO);
         mediaPlayerVocals = LoadMedia(trackName, Instruments.VOCALS);
 
         updateVolume(lastSpeed);
@@ -161,7 +154,6 @@ public class MainActivity extends Activity {
         mediaPlayerBass.start();
         mediaPlayerOther.start();
         mediaPlayerDrums.start();
-        mediaPlayerPiano.start();
         mediaPlayerVocals.start();
 
         // play the next track after track ends
@@ -184,9 +176,6 @@ public class MainActivity extends Activity {
                 break;
             case DRUMS:
                 trackPath += "drums.mp3";
-                break;
-            case PIANO:
-                trackPath += "piano.mp3";
                 break;
             case VOCALS:
                 trackPath += "vocals.mp3";
@@ -219,25 +208,21 @@ public class MainActivity extends Activity {
 
         float volumeBassTarget = getVolume(currentSpeed, 0, 30, 80);
         float volumeDrumsTarget = getVolume(currentSpeed, 0, 35, 40);
-        float volumePianoTarget = getVolume(currentSpeed, 15, 45);
         float volumeVocalTargets = getVolume(currentSpeed, 25, 45);
         float volumeOtherTarget = getVolume(currentSpeed, 20, 50, 10);
 
         volumeBassNow = getSmoothTransition(volumeBassNow, volumeBassTarget, volumeChangeSpeed);
         volumeDrumsNow = getSmoothTransition(volumeDrumsNow, volumeDrumsTarget, volumeChangeSpeed);
-        volumePianoNow = getSmoothTransition(volumePianoNow, volumePianoTarget, volumeChangeSpeed);
         volumeVocalsNow = getSmoothTransition(volumeVocalsNow, volumeVocalTargets, volumeChangeSpeed);
         volumeOtherNow = getSmoothTransition(volumeOtherNow, volumeOtherTarget, volumeChangeSpeed);
 
         System.out.println("BassTarget: " + volumeBassNow + " BassNow: " + volumeBassNow);
         System.out.println("DrumsTarget: " + volumeDrumsTarget + " DrumsNow: " + volumeDrumsNow);
-        System.out.println("PianoTarget: " + volumePianoTarget + " PianoNow: " + volumePianoNow);
         System.out.println("VocalsTarget: " + volumeVocalTargets + " VocalsNow: " + volumeVocalsNow);
         System.out.println("OtherTarget: " + volumeOtherTarget + " OtherNow: " + volumeOtherNow);
 
         mediaPlayerBass.setVolume(volumeBassNow, volumeBassNow);
         mediaPlayerDrums.setVolume(volumeDrumsNow, volumeDrumsNow);
-        mediaPlayerPiano.setVolume(volumePianoNow, volumePianoNow);
         mediaPlayerVocals.setVolume(volumeVocalsNow, volumeVocalsNow);
         mediaPlayerOther.setVolume(volumeOtherNow, volumeOtherNow);
     }
@@ -267,7 +252,6 @@ public class MainActivity extends Activity {
 
         mediaPlayerBass.setPlaybackParams(mediaPlayerBass.getPlaybackParams().setSpeed(musicSpeedNow));
         mediaPlayerDrums.setPlaybackParams(mediaPlayerDrums.getPlaybackParams().setSpeed(musicSpeedNow));
-//        mediaPlayerPiano.setPlaybackParams(mediaPlayerPiano.getPlaybackParams().setSpeed(musicSpeedNow));
         mediaPlayerVocals.setPlaybackParams(mediaPlayerVocals.getPlaybackParams().setSpeed(musicSpeedNow));
         mediaPlayerOther.setPlaybackParams(mediaPlayerOther.getPlaybackParams().setSpeed(musicSpeedNow));
     }
